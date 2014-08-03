@@ -1,9 +1,5 @@
 package com.crowdtrust.bacapi.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
@@ -36,6 +32,12 @@ public class CTClient {
 		this.secretKey = secretKey;
 	}
 	
+	/**
+	 * For command line use
+	 * @param url
+	 * @param content
+	 * @return
+	 */
 	public String executeAccountRequest(String url, String content){
 		 String result = "";
 		 Client client = Client.create();
@@ -47,11 +49,22 @@ public class CTClient {
 		logger.info("result: "+result);
 		return result;
 	}
-	
+	/**
+	 * For command line use
+	 * @param verb
+	 * @param content
+	 * @param url
+	 * @return
+	 * @throws MalformedURLException
+	 */
 	public String execute(String verb, String content, String url ) throws MalformedURLException{
 		logger.info(">>> Executing request with content: "+content);
 		//Step 1: generate content MD5
 		String contentMd5 =  Utility.encodeToBas64MD5(content);
+		//NOTE: if the verb is a get we only need to send an empty string, not the hash of an empty string
+		if(verb.equalsIgnoreCase("GET")){
+			contentMd5 = "";
+		}
 		logger.info(">>> Created contentMd5: "+contentMd5);
 		
 		//Step 2: generate the date
@@ -66,31 +79,48 @@ public class CTClient {
 		logger.info(">>> Extracted path: "+path);
 		
 		//Step 4: create the authorizationHeader.  Generates a string in the format of apiKey:signature
-		String authorizationHeader = Utility.createAuthHeader(verb, contentMd5, CONTENT_TYPE, currTimeStamp, path, apiKey, secretKey);
+		String tempContentType = "";
+		 if(verb.equalsIgnoreCase("POST")){
+			 tempContentType = CONTENT_TYPE;
+		 }
+		 
+		String authorizationHeader = Utility.createAuthHeader(verb, contentMd5, tempContentType, currTimeStamp, path, apiKey, secretKey);
 		logger.info(">>> Authorization Header: "+authorizationHeader);
 		
-		//Step 5: send request
+		//Step 5: create request
 		 Client client = Client.create();
 		 WebResource.Builder builder = client.resource(url)
 		        .header("Date",  currTimeStamp)
 		        .header("Authorization", authorizationHeader)
 		 		.header("Content-MD5", contentMd5);
 
-		 
-		 builder = builder.type(CONTENT_TYPE);
+		 //NOTE: if this is a GET request then the content type should be null/unset.  Sending an empty 
+		 //string content type will result in an error.  To carify, when signing the request in STEP4, we
+		 //require an empty string.  However, when sending the request, please leave the content-type as
+		 //unset or null
+		 if(verb.equalsIgnoreCase("GET")){
+			//content type should be empty
+			//builder = builder.header("Content-Type", "");
+			}
+		 else{
+			 builder = builder.type(tempContentType);
+		 }
 		 
 		 ClientResponse response = null;
-
 		  if (StringUtils.equalsIgnoreCase(verb, "POST")) {
 		    response = builder.post(ClientResponse.class, content);
 		  }
+		  else
+			  if(StringUtils.equalsIgnoreCase(verb, "GET")){
+				  response = builder.get(ClientResponse.class);
+			  }
 		  else{
-			  throw new RuntimeException("This sample client only does POST");
+			  throw new RuntimeException("This sample client only does POST/GET methods.");
 		  }
 		
 		  String result = response.getEntity(String.class);
 		  logger.info(">>> result: "+result);
 		return result;
 	}
-
+	
 }
