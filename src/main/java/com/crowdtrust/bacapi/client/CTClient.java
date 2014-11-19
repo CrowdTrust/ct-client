@@ -2,6 +2,7 @@ package com.crowdtrust.bacapi.client;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
 import javax.ws.rs.core.MediaType;
@@ -56,11 +57,13 @@ public class CTClient {
 	 * @param url
 	 * @return
 	 * @throws MalformedURLException
+	 * @throws NoSuchAlgorithmException 
 	 */
-	public String execute(String verb, String content, String url ) throws MalformedURLException{
+	public String execute(String verb, String content, String url ) throws MalformedURLException, NoSuchAlgorithmException{
 		logger.info(">>> Executing request with content: "+content);
 		//Step 1: generate content MD5
-		String contentMd5 =  Utility.encodeToBas64MD5(content);
+		String contentMd5 =  Utility.encodeToBase64MD5(content);
+		
 		//NOTE: if the verb is a get we only need to send an empty string, not the hash of an empty string
 		if(verb.equalsIgnoreCase("GET")){
 			contentMd5 = "";
@@ -71,6 +74,8 @@ public class CTClient {
 		this.requestTimeStamp = new Date();
 		String currTimeStamp = Utility.convertTimeStamp(this.requestTimeStamp);
 		logger.info(">>> Created time stamp: "+currTimeStamp);
+		
+		//currTimeStamp = "Tue, 11 Nov 2014 18:49:00 GMT";
 		
 		//Step 3: extract the Path
 		// Extract the path of the URL
@@ -94,21 +99,12 @@ public class CTClient {
 		        .header("Authorization", authorizationHeader)
 		 		.header("Content-MD5", contentMd5);
 
-		 //NOTE: if this is a GET request then the content type should be null/unset.  Sending an empty 
-		 //string content type will result in an error.  To carify, when signing the request in STEP4, we
-		 //require an empty string.  However, when sending the request, please leave the content-type as
-		 //unset or null
-		 if(verb.equalsIgnoreCase("GET")){
-			//content type should be empty
-			//builder = builder.header("Content-Type", "");
-			}
-		 else{
-			 builder = builder.type(tempContentType);
-		 }
+		 
 		 
 		 ClientResponse response = null;
 		  if (StringUtils.equalsIgnoreCase(verb, "POST")) {
-		    response = builder.post(ClientResponse.class, content);
+			  builder = builder.type(tempContentType);
+			  response = builder.post(ClientResponse.class, content);
 		  }
 		  else
 			  if(StringUtils.equalsIgnoreCase(verb, "GET")){

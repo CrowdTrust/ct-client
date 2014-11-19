@@ -1,9 +1,11 @@
 package com.crowdtrust.bacapi.client;
 
+import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -31,10 +33,10 @@ public class Utility {
 	 * @param contentToEncode
 	 * @return
 	 */
-	public static String encodeToBas64MD5(String contentToEncode)  {
+	public static String encodeToBase64MD5(String contentToEncode)  {
 		if(contentToEncode == null || contentToEncode.isEmpty())
 			return "";
-		
+		System.out.println("Content to encode: "+contentToEncode);
 		String toRet = "";
 		try{
 			MessageDigest digest = MessageDigest.getInstance(MD5_ALGORITHM);
@@ -43,6 +45,20 @@ public class Utility {
 		} catch(NoSuchAlgorithmException ex) { }
 		
 		return toRet;
+	}
+	
+	public static String encodeToBase64MD5Alt(String input) throws NoSuchAlgorithmException{
+		String result = input;
+	    if(input != null) {
+	        MessageDigest md = MessageDigest.getInstance("MD5"); //or "SHA-1"
+	        md.update(input.getBytes());
+	        BigInteger hash = new BigInteger(1, md.digest());
+	        result = hash.toString(16);
+	        while(result.length() < 32) { //40 for SHA-1
+	            result = "0" + result;
+	        }
+	    }
+	    return result;
 	}
 	
 	/**
@@ -73,13 +89,13 @@ public class Utility {
 
 		  // Generate 'toSign' String
 		  String toSign = createHMACStringToSign(httpVerb, contentMD5, contentType, timestamp, path);
-
+		  System.out.println("toSign: "+toSign);
 		  // Build Java SecretKey for signing
 		  SecretKey secretKey = buildSecretKey(secret);
-
+		  
 		  // Create Base64 Encoded, Hmac-SHA256 Hashed Signature using secret key
 		  String signature = encodeToBase64HMAC(secretKey, toSign);
-
+		  System.out.println("signature: "+signature);
 		  String authHeader = apiKey + ":" + signature;
 
 		  return authHeader;
@@ -93,16 +109,12 @@ public class Utility {
 		        .append(contentType).append("\n")
 		        .append(timestamp).append("\n")
 		        .append(path);
-
+		  System.out.println("ToSign: "+toSign);
 		  return toSign.toString();
 		}
 
 		public static SecretKey buildSecretKey(String base64String) {
-
-		  byte[] encodedKey = Base64.decodeBase64(base64String);
-		  SecretKey toRet = new SecretKeySpec(encodedKey, 0, encodedKey.length, "HmacSHA256");
-
-		  return toRet;
+		  return new SecretKeySpec(base64String.getBytes(), KEY_ALGORITHM);
 		}
 
 		public static String encodeToBase64HMAC(SecretKey secretKey, String data) {
@@ -112,8 +124,19 @@ public class Utility {
 		  try {
 		    Mac mac = Mac.getInstance("HmacSHA256");
 		    mac.init(secretKey);
+		    
 		    byte[] rawHmac = mac.doFinal(data.getBytes());
+		    System.out.println("RAW HMAC: "+Arrays.toString(rawHmac));
 		    toRet = new String(Base64.encodeBase64(rawHmac));
+		    System.out.println("Base64 encoded string: "+toRet);
+		    
+		    
+		    //other test stuff
+		    Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+		    
+		     sha256_HMAC.init(secretKey);
+		    String hash = Base64.encodeBase64String(sha256_HMAC.doFinal(data.getBytes()));
+		    System.out.println("Is this hash the same hash: "+hash+" toRet: "+toRet);
 		  }
 		  catch(NoSuchAlgorithmException ex) { }
 		  catch(InvalidKeyException ex) { }

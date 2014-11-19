@@ -2,6 +2,7 @@ package com.crowdtrust.bacapi.client;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -17,7 +18,7 @@ public class ClientWrapper {
 
 	static Logger logger = LoggerFactory.getLogger(ClientWrapper.class);
 	
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 		logger.info("Running ct client...");
 		
 		if(StringUtils.equalsIgnoreCase(args[0], "account:create")){
@@ -25,6 +26,7 @@ public class ClientWrapper {
 			CTClient client = new CTClient();
 			String content = FileUtils.readFileToString(new File(args[1]));
 			client.executeAccountRequest("https://www.crowdtrust.com/bacapi/account", content);
+			
 		}
 		else
 		if(StringUtils.equalsIgnoreCase(args[0], "execute")){
