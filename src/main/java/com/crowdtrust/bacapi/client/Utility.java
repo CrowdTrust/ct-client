@@ -5,7 +5,6 @@ import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -36,7 +35,6 @@ public class Utility {
 	public static String encodeToBase64MD5(String contentToEncode)  {
 		if(contentToEncode == null || contentToEncode.isEmpty())
 			return "";
-		System.out.println("Content to encode: "+contentToEncode);
 		String toRet = "";
 		try{
 			MessageDigest digest = MessageDigest.getInstance(MD5_ALGORITHM);
@@ -89,13 +87,11 @@ public class Utility {
 
 		  // Generate 'toSign' String
 		  String toSign = createHMACStringToSign(httpVerb, contentMD5, contentType, timestamp, path);
-		  System.out.println("toSign: "+toSign);
 		  // Build Java SecretKey for signing
 		  SecretKey secretKey = buildSecretKey(secret);
 		  
 		  // Create Base64 Encoded, Hmac-SHA256 Hashed Signature using secret key
 		  String signature = encodeToBase64HMAC(secretKey, toSign);
-		  System.out.println("signature: "+signature);
 		  String authHeader = apiKey + ":" + signature;
 
 		  return authHeader;
@@ -109,7 +105,6 @@ public class Utility {
 		        .append(contentType).append("\n")
 		        .append(timestamp).append("\n")
 		        .append(path);
-		  System.out.println("ToSign: "+toSign);
 		  return toSign.toString();
 		}
 
@@ -124,19 +119,14 @@ public class Utility {
 		  try {
 		    Mac mac = Mac.getInstance("HmacSHA256");
 		    mac.init(secretKey);
-		    
 		    byte[] rawHmac = mac.doFinal(data.getBytes());
-		    System.out.println("RAW HMAC: "+Arrays.toString(rawHmac));
 		    toRet = new String(Base64.encodeBase64(rawHmac));
-		    System.out.println("Base64 encoded string: "+toRet);
-		    
 		    
 		    //other test stuff
 		    Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
 		    
 		     sha256_HMAC.init(secretKey);
 		    String hash = Base64.encodeBase64String(sha256_HMAC.doFinal(data.getBytes()));
-		    System.out.println("Is this hash the same hash: "+hash+" toRet: "+toRet);
 		  }
 		  catch(NoSuchAlgorithmException ex) { }
 		  catch(InvalidKeyException ex) { }
